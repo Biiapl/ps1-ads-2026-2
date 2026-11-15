@@ -14,6 +14,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
+import br.edu.fatecfranca.api.dtos.LoginResponse;
+import br.edu.fatecfranca.api.services.TokenService;
+import br.edu.fatecfranca.api.dtos.LoginRequest;
 import br.edu.fatecfranca.api.dtos.UserRequest;
 import br.edu.fatecfranca.api.dtos.UserResponse;
 import br.edu.fatecfranca.api.entities.User;
@@ -24,14 +29,30 @@ import br.edu.fatecfranca.api.services.UserService;
 public class UserController {
 
     private final UserService service;
+private final TokenService tokenService;
 
-    public UserController(UserService service) {
-        this.service = service;
-    }
+public UserController(UserService service, TokenService tokenService) {
+    this.service = service;
+    this.tokenService = tokenService;
+}
+
+ @PostMapping("/login")
+public ResponseEntity<LoginResponse> login(
+        @Valid @RequestBody LoginRequest request) {
+
+    return service.authenticate(request)
+            .map(user -> new LoginResponse(
+                    tokenService.generate(user),
+                    new UserResponse(user)))
+            .map(ResponseEntity::ok)
+            .orElseGet(() -> ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .build());
+}
 
     @PostMapping
     public ResponseEntity<UserResponse> create(
-            @RequestBody UserRequest request) {
+            @Valid @RequestBody UserRequest request) {
 
         User savedUser = service.create(request);
 
@@ -59,7 +80,7 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<UserResponse> update(
             @PathVariable Long id,
-            @RequestBody UserRequest request) {
+            @Valid @RequestBody UserRequest request) {
 
         if (!service.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -72,6 +93,7 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
+
         if (!service.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
