@@ -14,82 +14,69 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.validation.Valid;
-
 import br.edu.fatecfranca.api.dtos.UserRequest;
+import br.edu.fatecfranca.api.dtos.UserResponse;
 import br.edu.fatecfranca.api.entities.User;
-import br.edu.fatecfranca.api.repositories.UserRepository;
+import br.edu.fatecfranca.api.services.UserService;
 
 @RestController
 @RequestMapping("/users")
 public class UserController {
 
-    private final UserRepository userRepository;
+    private final UserService service;
 
-    public UserController(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
-
-    @GetMapping
-    public List<User> findAll() {
-        return userRepository.findAll();
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<User> findById(@PathVariable Long id) {
-        return userRepository.findById(id)
-                .map(user -> ResponseEntity.ok(user))
-                .orElse(ResponseEntity.notFound().build());
+    public UserController(UserService service) {
+        this.service = service;
     }
 
     @PostMapping
-    public ResponseEntity<User> save(@Valid @RequestBody UserRequest request) {
+    public ResponseEntity<UserResponse> create(
+            @RequestBody UserRequest request) {
 
-        User user = new User();
-
-        user.setFullname(request.fullname());
-        user.setUsername(request.username());
-        user.setEmail(request.email());
-        user.setPassword(request.password());
-        user.setIsAdmin(request.isAdmin());
-
-        User savedUser = userRepository.save(user);
+        User savedUser = service.create(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(savedUser);
+                .body(new UserResponse(savedUser));
+    }
+
+    @GetMapping
+    public List<UserResponse> findAll() {
+        return service.findAll()
+                .stream()
+                .map(UserResponse::new)
+                .toList();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UserResponse> findById(@PathVariable Long id) {
+        return service.findById(id)
+                .map(UserResponse::new)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> update(
+    public ResponseEntity<UserResponse> update(
             @PathVariable Long id,
-            @Valid @RequestBody UserRequest request) {
+            @RequestBody UserRequest request) {
 
-        if (!userRepository.existsById(id)) {
+        if (!service.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
 
-        User user = new User();
+        User updatedUser = service.update(id, request);
 
-        user.setId(id);
-        user.setFullname(request.fullname());
-        user.setUsername(request.username());
-        user.setEmail(request.email());
-        user.setPassword(request.password());
-        user.setIsAdmin(request.isAdmin());
-
-        User updatedUser = userRepository.save(user);
-
-        return ResponseEntity.ok(updatedUser);
+        return ResponseEntity.ok(new UserResponse(updatedUser));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (!userRepository.existsById(id)) {
+        if (!service.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
 
-        userRepository.deleteById(id);
+        service.deleteById(id);
 
         return ResponseEntity.noContent().build();
     }
