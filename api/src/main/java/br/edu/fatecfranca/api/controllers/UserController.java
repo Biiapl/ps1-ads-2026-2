@@ -1,3 +1,4 @@
+
 package br.edu.fatecfranca.api.controllers;
 
 import java.util.List;
@@ -11,9 +12,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
+import br.edu.fatecfranca.api.dtos.UserRequest;
 import br.edu.fatecfranca.api.entities.User;
 import br.edu.fatecfranca.api.repositories.UserRepository;
 
@@ -40,8 +43,16 @@ public class UserController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<User> save(@RequestBody User user) {
+    public ResponseEntity<User> save(@Valid @RequestBody UserRequest request) {
+
+        User user = new User();
+
+        user.setFullname(request.fullname());
+        user.setUsername(request.username());
+        user.setEmail(request.email());
+        user.setPassword(request.password());
+        user.setIsAdmin(request.isAdmin());
+
         User savedUser = userRepository.save(user);
 
         return ResponseEntity
@@ -50,12 +61,22 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> update(@PathVariable Long id, @RequestBody User user) {
+    public ResponseEntity<User> update(
+            @PathVariable Long id,
+            @Valid @RequestBody UserRequest request) {
+
         if (!userRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
 
+        User user = new User();
+
         user.setId(id);
+        user.setFullname(request.fullname());
+        user.setUsername(request.username());
+        user.setEmail(request.email());
+        user.setPassword(request.password());
+        user.setIsAdmin(request.isAdmin());
 
         User updatedUser = userRepository.save(user);
 
