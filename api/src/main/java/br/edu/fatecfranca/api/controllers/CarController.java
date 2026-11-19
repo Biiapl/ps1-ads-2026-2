@@ -59,7 +59,7 @@ public class CarController {
             car.setCustomer(customer.get());
         }
 
-        Car savedCar = service.create(car);
+        Car savedCar = service.create(car, request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -110,7 +110,7 @@ public class CarController {
             car.setCustomer(customer.get());
         }
 
-        return ResponseEntity.ok(service.update(car));
+        return ResponseEntity.ok(service.update(car, request));
     }
 
     @DeleteMapping("/{id}")
